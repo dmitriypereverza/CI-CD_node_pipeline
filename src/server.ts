@@ -11,6 +11,7 @@ app.get('/', (req: Request, res) => {
 });
 app.post('/webhooks', (req: Request, res) => {
   const branch = req.body.ref;
+  console.log(req.body);
   deploy(res);
   // res.send(JSON.stringify(req.body))
 });
