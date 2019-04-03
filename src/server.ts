@@ -27,4 +27,4 @@ function deploy(res){
 }
 
 
-app.listen(3000, () => console.log('CI service listening on port 3000!'));
+app.listen(80, () => console.log('CI service listening on port 3000!'));
