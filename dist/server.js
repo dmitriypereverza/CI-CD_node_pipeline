@@ -25,5 +25,6 @@ function deploy(res) {
         res.send(stdout);
     });
 }
-app.listen(80, () => console.log('CI service listening on port 3000!'));
+const port = process.env.PORT || 5000;
+app.listen(port, () => console.log(`CI service listening on port ${port}!`));
 //# sourceMappingURL=server.js.map
