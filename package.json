@@ -13,13 +13,13 @@
   "author": "Dmitriy Pereverza",
   "devDependencies": {
     "nodemon": "^1.18.3",
-    "tslint": "^5.11.0",
-    "typescript": "^3.0.1"
+    "tslint": "^5.11.0"
   },
   "dependencies": {
     "@types/express": "^4.16.0",
     "child_process": "^1.0.2",
-    "express": "^4.16.3"
+    "express": "^4.16.3",
+    "typescript": "^3.0.1"
   },
   "engines": {
     "node": "10.15.0",
