@@ -11,7 +11,7 @@ routers.forEach(route => {
     const validate = getValidateFunc(route.validationSchema);
     const valid = validate(req.body);
     if (!valid) {
-      res.send(JSON.stringify(validate.errors));
+      res.send(JSON.stringify(validate.errors.map(item => item.message)));
     }
     route.handler(req, res);
   });
