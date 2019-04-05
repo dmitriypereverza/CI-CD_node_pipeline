@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "properties": {
+    "project": { "type": "string" },
+    "git": { "type": "string" },
+    "privateKey": { "type": "string" }
+  },
+  "required": [ "project", "git", "privateKey" ]
+}

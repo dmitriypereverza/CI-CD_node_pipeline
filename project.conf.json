@@ -1,0 +1,23 @@
+{
+  "name": "Тестовый проект",
+  "code": "testProject",
+  "targets": [
+    {
+      "branch": "master",
+      "deploy": {
+        "ssh": {
+          "host": "localhost",
+          "username": "steel",
+          "privateKey": "/home/steel/.ssh/id_rsa"
+        },
+        "command": "composer install && npm i"
+      },
+      "test": {
+        "command": "jest"
+      },
+      "notification": {
+        "email": "d.pereverza@worksolutions.ru"
+      }
+    }
+  ]
+}

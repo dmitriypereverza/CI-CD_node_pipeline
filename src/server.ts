@@ -1,32 +1,21 @@
-import express, { Request } from 'express';
-import childProcess from 'child_process';
-
+import express, { Request, Response } from 'express';
+import routers from "./router/router";
+import { getValidateFunc } from "./JsonValidators"
 const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded());
 
-app.get('/', (req: Request, res) => {
-  res.send(JSON.stringify(req.query))
-});
-app.post('/webhooks', (req: Request, res) => {
-  const branch = req.body.ref;
-  console.log(req.body);
-  deploy(res);
-  // res.send(JSON.stringify(req.body))
-});
-
-
-function deploy(res){
-  childProcess.exec('ls -la', function(err, stdout, stderr){
-    if (err) {
-      console.error(err);
-      return res.send(500);
+routers.forEach(route => {
+  app[route.type.toLowerCase()](route.path, function (req: Request, res: Response) {
+    const validate = getValidateFunc(route.validationSchema);
+    const valid = validate(req.body);
+    if (!valid) {
+      res.send(JSON.stringify(validate.errors));
     }
-    res.send(stdout);
+    route.handler(req, res);
   });
-}
-
+});
 
 const port = process.env.PORT || 5000;
 app.listen(port, () => console.log(`CI/CD service listening on port ${port}!`));
