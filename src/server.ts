@@ -8,14 +8,18 @@ app.use(express.urlencoded());
 
 routers.forEach(route => {
   app[route.type.toLowerCase()](route.path, function (req: Request, res: Response) {
-    const validate = getValidateFunc(route.validationSchema);
-    const valid = validate(req.body);
-    if (!valid) {
-      res.send(JSON.stringify(validate.errors.map(item => item.message)));
-    }
+    if (route.validationSchema) validate(req, res, route.validationSchema);
     route.handler(req, res);
   });
 });
+
+function validate (req, res, validationSchema) {
+  const validate = getValidateFunc(validationSchema);
+  const valid = validate(req.body);
+  if (!valid) {
+    res.send(JSON.stringify(validate.errors.map(item => item.message)));
+  }
+}
 
 const port = process.env.PORT || 5000;
 app.listen(port, () => console.log(`CI/CD service listening on port ${port}!`));
