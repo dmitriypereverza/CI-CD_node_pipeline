@@ -1,8 +1,0 @@
-{
-  "projects": [
-    {
-      "name": "Проект для тестирования CI/CD",
-      "git": "https://github.com/dmitriypereverza/CI_node_service.git"
-    }
-  ]
-}

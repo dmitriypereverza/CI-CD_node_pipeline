@@ -1,0 +1,54 @@
+{
+  "type": "object",
+  "properties": {
+    "name": {"type": "string"},
+    "code": {"type": "string"},
+    "targets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "branch": {"type": "string"},
+          "deploy": {
+            "type": "object",
+            "properties": {
+              "ssh": {
+                "type": "object",
+                "properties": {
+                  "host": {"type": "string"},
+                  "username": {"type": "string"},
+                  "cwd": {"type": "string"}
+                },
+                "required": [
+                  "host",
+                  "username",
+                  "cwd"
+                ]
+              },
+              "command": {"type": "string"}
+            },
+            "required": ["ssh", "command"]
+          },
+          "testCommand": {"type": "string"},
+          "notification": {
+            "type": "string",
+            "properties": {
+              "email": {"type": "string"}
+            }
+          }
+        },
+        "required": [
+          "branch",
+          "deploy",
+          "testCommand",
+          "notification"
+        ]
+      }
+    }
+  },
+  "required": [
+    "name",
+    "code",
+    "targets"
+  ]
+}

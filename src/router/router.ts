@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 
-import registerHandler from "../handlers/register";
-import deployHandler from "../handlers/deploy";
+import registerHandler from "../requestHandlers/register";
+import deployHandler from "../requestHandlers/deploy";
 
 interface RouteInterface {
   type: "POST" | "GET" | "PUT" | "DELETE";
@@ -15,7 +15,7 @@ export default [
     path: '/register',
     type: 'POST',
     handler: registerHandler,
-    validationSchema: require("./schemas/register.json")
+    validationSchema: require("../jsonSchemas/register.json")
   },
   {
     path: '/command',
@@ -23,12 +23,12 @@ export default [
     handler: function () {
 
     },
-    validationSchema: require("./schemas/command.json")
+    validationSchema: require("../jsonSchemas/command.json")
   },
   {
     path: '/webhook',
     type: 'POST',
     handler: deployHandler,
-    validationSchema: require("./schemas/webhook.json")
+    validationSchema: require("../jsonSchemas/webhook.json")
   },
 ] as RouteInterface[];

@@ -8,13 +8,11 @@
         "ssh": {
           "host": "localhost",
           "username": "steel",
-          "privateKey": "/home/steel/.ssh/id_rsa"
+          "cwd": "/var/www/html"
         },
         "command": "composer install && npm i"
       },
-      "test": {
-        "command": "jest"
-      },
+      "testCommand": "jest",
       "notification": {
         "email": "d.pereverza@worksolutions.ru"
       }

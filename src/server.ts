@@ -1,6 +1,9 @@
 import express, { Request, Response } from 'express';
 import routers from "./router/router";
 import { getValidateFunc } from "./JsonValidators"
+
+require("./eventHandlers/index");
+
 const app = express();
 
 app.use(express.json());

@@ -1,6 +1,6 @@
 import DataStore from "nedb";
 
-const db = new DataStore({ filename: 'src/Storage/storage.json' });
+const db = new DataStore({ filename: 'src/Storage/data/projects.json' });
 
 db.loadDatabase(function (err) {
   if (err) {
