@@ -31,10 +31,11 @@
           },
           "testCommand": {"type": "string"},
           "notification": {
-            "type": "string",
+            "type": "object",
             "properties": {
               "email": {"type": "string"}
-            }
+            },
+            "required": ["email"]
           }
         },
         "required": [

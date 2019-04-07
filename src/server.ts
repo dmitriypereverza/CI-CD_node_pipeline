@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import routers from "./router/router";
-import { getValidateFunc } from "./JsonValidators"
+import * as JsonValidators from "./JsonValidators"
 
 require("./eventHandlers/index");
 
@@ -17,10 +17,9 @@ routers.forEach(route => {
 });
 
 function validate (req, res, validationSchema) {
-  const validate = getValidateFunc(validationSchema);
-  const valid = validate(req.body);
-  if (!valid) {
-    res.send(JSON.stringify(validate.errors.map(item => item.message)));
+  const validate = JsonValidators.validate(req.body, validationSchema);
+  if (!validate.isValid) {
+    res.send(JSON.stringify(validate.errors));
   }
 }
 

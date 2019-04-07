@@ -2,25 +2,20 @@ import { Request, Response } from "express";
 import { Error } from "nodegit";
 import { emitter } from "../eventHandlers";
 import NodeSsh from "node-ssh";
-import { getValidateFunc } from "../JsonValidators";
+import { validate } from "../JsonValidators";
 const Git = require("nodegit");
 
 const ssh = new NodeSsh();
 
-function isValidSchema (config) {
-  const validate = getValidateFunc(require("../jsonSchemas/client_config.json"));
-  const valid = validate(config);
-  if (!valid) {
-    emitter.emit('log', `Получен невалидный конфиг файл проекта. Ощибка: ${JSON.stringify(validate.errors.map(item => item.message))}`);
-  }
-  return valid;
-}
-
 const deploy = async function deploy({ body: { project, git, privateKey } }: Request, res: Response){
   const config = await getProjectConfig(git, res);
 
-  if (!isValidSchema(config)) {
-    res.send('Project config not valid');
+  const validationResponse = validate(config, require("../jsonSchemas/client_config.json"));
+  if (!validationResponse.isValid) {
+    emitter.emit('log.error',
+      `Получен невалидный конфиг файл проекта. Ощибки: ${JSON.stringify(validationResponse.errors)}`
+    );
+    res.send(`Project config not valid. Errors: ${validationResponse.errors.join(', ')}`);
     return;
   }
 
@@ -67,6 +62,5 @@ function getProjectConfig (git, res: Response) {
       }));
     });
 }
-
 
 export default deploy;

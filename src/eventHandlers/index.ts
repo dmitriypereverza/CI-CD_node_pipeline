@@ -10,4 +10,5 @@ emitter.on('notify.user', (email, text) => {
     .catch(err => logger.error(`Error send mail on ${email}: ${err}`));
 });
 
-emitter.on('log', data => logger.error(data));
+emitter.on('log.info', data => logger.info(data));
+emitter.on('log.error', data => logger.error(data));
