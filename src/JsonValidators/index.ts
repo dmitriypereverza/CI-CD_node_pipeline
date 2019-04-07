@@ -13,6 +13,8 @@ export function validate (data, validationSchema): ValidationResponse {
 
   return {
     isValid: !!valid,
-    errors: validate.errors.map(item => item.message)
+    errors: validate.errors
+      ? validate.errors.map(item => item.message)
+      : []
   };
 }
