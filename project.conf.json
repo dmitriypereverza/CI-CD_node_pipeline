@@ -7,7 +7,8 @@
       "deploy": {
         "ssh": {
           "host": "localhost",
-          "username": "steel",
+          "pass": "#prodPass#",
+          "username": "#userName#",
           "cwd": "/var/www/html"
         },
         "command": "composer install && npm i"

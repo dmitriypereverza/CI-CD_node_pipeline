@@ -1,11 +1,5 @@
-import DataStore from "nedb";
+import { Datastore } from "nedb-async-await";
 
-const db = new DataStore({ filename: 'src/Storage/data/projects.json' });
-
-db.loadDatabase(function (err) {
-  if (err) {
-    throw new Error(`Database error: ${err}`)
-  }
-});
+const db = Datastore({ filename: 'src/Storage/data/projects.json', autoload: true });
 
 export default db;

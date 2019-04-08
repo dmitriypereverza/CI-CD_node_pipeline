@@ -1,20 +1,20 @@
 import { Request, Response } from "express";
 import db from "../Storage";
 
-const registerProject = ({ body: { project, git, email } }: Request, res: Response) => {
-  db.findOne({ project }, (err, document) => {
-    if (document) {
-      res.send(`Проект с именем ${project} уже зарегистрирован.`);
+const registerProject = async ({ body: { project, git, privateParam } }: Request, res: Response) => {
+  const document = await db.findOne({ project });
+  if (document) {
+    res.send(`Проект с именем ${project} уже зарегистрирован.`);
+    return;
+  }
+
+  db.insert({ project, git, privateParam })
+    .then(() => res.send(`Проект зарегистрирован.`))
+    .catch(err => {
+    if (err) {
+      res.send(`Ошибка при сохранении проекта "${project}": ${err}`);
       return;
     }
-
-    db.insert({ project, git, email }, (err, document) => {
-      if (err) {
-        res.send(`Ощибка при сохранении проекта "${project}": ${err}`);
-        return;
-      }
-      res.send(`Проект зарегистрирован.`);
-    });
   });
 };
 

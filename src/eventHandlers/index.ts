@@ -12,3 +12,4 @@ emitter.on('notify.user', (email, text) => {
 
 emitter.on('log.info', data => logger.info(data));
 emitter.on('log.error', data => logger.error(data));
+emitter.on('user.error', data => logger.error(data));

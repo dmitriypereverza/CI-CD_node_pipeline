@@ -3,7 +3,9 @@
   "properties": {
     "project": { "type": "string" },
     "git": { "type": "string" },
-    "privateKey": { "type": "string" }
+    "privateParam": {
+      "type": "object"
+    }
   },
-  "required": [ "project", "git", "privateKey" ]
+  "required": [ "project", "git" ]
 }
