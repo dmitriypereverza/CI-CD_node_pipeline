@@ -3,11 +3,12 @@
   "code": "testProject",
   "targets": [
     {
-      "branch": "master",
+      "branch": "refs/heads/master",
       "deploy": {
         "ssh": {
           "host": "localhost",
           "pass": "#prodPass#",
+          "port": 2,
           "username": "#userName#",
           "cwd": "/var/www/html"
         },

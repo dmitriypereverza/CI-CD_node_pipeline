@@ -10,8 +10,8 @@ const Git = require("nodegit");
 
 const ssh = new NodeSsh();
 
-const deploy = async function deploy({ body: { project, git, privateKey } }: Request, res: Response){
-  const config = await getProjectConfig(git, res);
+const deploy = async function deploy({ body: { ref, git_url } }: Request, res: Response){
+  const config = await getProjectConfig(git_url, res);
 
   const validationResponse = validate(config, require("../jsonSchemas/client_config.json"));
   if (!validationResponse.isValid) {
@@ -22,38 +22,45 @@ const deploy = async function deploy({ body: { project, git, privateKey } }: Req
     return;
   }
 
-  const builderConfig = buildProjectConfig(config, {});
-  console.log(builderConfig);
+  let builderConfig = null;
+  try {
+    builderConfig = buildProjectConfig(config, {});
+  } catch (e) {
+    emitter.emit('notify.user', e.message);
+    res.send(e.message);
+    return;
+  }
 
-  return;
+  // TODO тут должны определить в какую ветку произвести деплой
+  const target = builderConfig.targets.find(target => target.branch === ref);
 
   ssh.connect({
-    host: '194.87.93.250',
-    username: 'root',
-    port: 22,
-    password: 'pbb2c7do',
+    host: target.deploy.ssh.host,
+    username: target.deploy.ssh.username,
+    port: target.deploy.ssh.port,
+    password: target.deploy.ssh.pass,
     tryKeyboard: true,
     onKeyboardInteractive: (name, instructions, instructionsLang, prompts, finish) => {
       if (prompts.length > 0 && prompts[0].prompt.toLowerCase().includes('password')) {
-        finish(['pbb2c7do'])
+        finish([target.deploy.ssh.pass])
       }
     }
   }).then(() => {
-    ssh.execCommand('git status', { cwd: '/var/www/parsers' }).then(function(result) {
-      console.log('STDOUT: ' + result.stdout);
+    ssh.execCommand('git status', { cwd: target.deploy.ssh.cwd }).then(function(result) {
+      emitter.emit('notify.user', 'STDOUT: ' + result.stdout);
       if (result.stderr) {
-        console.log('STDERR: ' + result.stderr);
+        emitter.emit('notify.user', 'STDERR: ' + result.stderr);
       }
     });
   }).catch(function (err) {
-    console.log(err);
+    emitter.emit('notify.user', 'Error: ' + err);
   });
 };
 
 function getProjectConfig (git, res: Response) {
   return Git.Clone(git, "tmp")
     .then(repo => repo.getMasterCommit())
-    .then(commit => commit.getEntry("vue.config.js"))
+    .then(commit => commit.getEntry("project.conf.json"))
     .then(entry => entry.getBlob().then(blob => {
         blob.entry = entry;
         return blob;
