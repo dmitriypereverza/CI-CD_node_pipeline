@@ -4,7 +4,7 @@ const ajv = new Ajv();
 
 interface ValidationResponse {
   isValid: boolean;
-  errors: string[]
+  errors: any[]
 }
 
 export function validate (data, validationSchema): ValidationResponse {
@@ -14,7 +14,7 @@ export function validate (data, validationSchema): ValidationResponse {
   return {
     isValid: !!valid,
     errors: validate.errors
-      ? validate.errors.map(item => item.message)
+      ? validate.errors
       : []
   };
 }

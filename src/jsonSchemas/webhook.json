@@ -1,9 +1,14 @@
 {
   "type": "object",
   "properties": {
-    "project": { "type": "string" },
-    "git": { "type": "string" },
-    "privateKey": { "type": "string" }
+    "ref": { "type": "string" },
+    "repository": {
+      "type": "object",
+      "properties": {
+        "clone_url": { "type": "string" }
+      },
+      "required": [ "clone_url" ]
+    }
   },
-  "required": [ "project", "git", "privateKey" ]
+  "required": [ "ref" ]
 }
