@@ -3,6 +3,10 @@
   "properties": {
     "project": { "type": "string" },
     "git": { "type": "string" },
+    "notificationEmails": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
     "privateParam": {
       "type": "object"
     }
