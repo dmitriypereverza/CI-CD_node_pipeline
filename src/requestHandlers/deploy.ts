@@ -22,7 +22,7 @@ const deploy = async function deploy({ body: { ref, after: currentCommit, reposi
   let config = await getProjectConfig(project, res);
   if (!config) {
     emitter.emit('notify.user', project.notificationEmails,
-      `Не удалось получить конфиг проекта. Проверте настройки проекта.`
+      `Не удалось получить конфиг проекта ${project.project}. Проверте настройки проекта.`
     );
     res.send();
     return;
@@ -52,7 +52,6 @@ const deploy = async function deploy({ body: { ref, after: currentCommit, reposi
     return;
   }
 
-  let isBuildSuccess = true;
   connectToServer(target.deploy.ssh)
     .then(async () => {
       // Очищаем проект в нужной ветке
@@ -61,36 +60,48 @@ const deploy = async function deploy({ body: { ref, after: currentCommit, reposi
       // Тянем изменения
       const pullResult = await ssh.execCommand(`git pull origin ${target.branch}`, { cwd: target.deploy.ssh.cwd });
       if (pullResult.code !== 0) {
-        isBuildSuccess = false;
         console.log('pullResult', pullResult);
         emitter.emit('notify.user', project.notificationEmails, `Не удалось получить последнюю версию проекта: ${pullResult.stderr}`);
+
         await ssh.execCommand(`git reset --hard ${project.lastSuccessCommit}`, { cwd: target.deploy.ssh.cwd });
+        res.send();
+        return;
       }
 
       // Выполняем тесты
       const testResult = await ssh.execCommand(target.testCommand, { cwd: target.deploy.ssh.cwd });
-      if (testResult.code !== 0 && isBuildSuccess) {
+      if (testResult.code !== 0) {
         console.log('testResult', testResult);
-        isBuildSuccess = false;
         emitter.emit('notify.user', project.notificationEmails, `Тесты провалились: ${testResult.stderr}`);
+
         await ssh.execCommand(`git reset --hard ${project.lastSuccessCommit}`, { cwd: target.deploy.ssh.cwd });
+        res.send();
+        return;
       }
 
       // Выполняем команду сборки
-      ssh.execCommand(target.deploy.command, { cwd: target.deploy.ssh.cwd })
-        .then(function(result) {
-          console.log('result', result);
-          if (isBuildSuccess) {
-            emitter.emit('notify.user', project.notificationEmails, 'STDOUT: ' + result.stdout + "\nSTDERR: " + result.stderr);
-            // Обновляем хэш последнего успешного коммита
-            db.update({ _id: project._id }, { $set: { lastSuccessCommit: currentCommit }});
-          }
-          res.send();
-        });
-      }).catch(function (err) {
-        emitter.emit('notify.user', project.notificationEmails, `Проблема подключения к удаленному серверу: ${err}`);
-        res.send();
-      });
+      const deployResult = await buildProject(target.deploy);
+      console.log('deployResult', deployResult);
+      if (deployResult.code === 0) {
+        emitter.emit('notify.user', project.notificationEmails,
+          `Проект успешно собран.\n ${deployResult.stdout}`
+        );
+        // Обновляем хэш последнего успешного коммита
+        db.update({ _id: project._id }, { $set: { lastSuccessCommit: currentCommit }});
+      } else {
+        emitter.emit('notify.user', project.notificationEmails,
+          `Произошли ошибки при сборке проекта.\n ${deployResult.stderr}`
+        );
+        await ssh.execCommand(`git reset --hard ${project.lastSuccessCommit}`, { cwd: target.deploy.ssh.cwd });
+        await buildProject(target.deploy);
+      }
+      res.send();
+      return;
+
+    }).catch(function (err) {
+      emitter.emit('notify.user', project.notificationEmails, `Проблема подключения к удаленному серверу: ${err}`);
+      res.send();
+    });
 };
 
 function connectToServer (sshConfig) {
@@ -129,6 +140,10 @@ function getProjectConfig (project, res: Response) {
       rimraf.sync("tmp");
       res.send();
     })
+}
+
+function buildProject (deployConfig) {
+  return ssh.execCommand(deployConfig.command, { cwd: deployConfig.ssh.cwd });
 }
 
 export default deploy;
