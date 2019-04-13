@@ -4,10 +4,15 @@ import { logger } from "../Logger";
 
 export const emitter = new EventEmitter();
 
-emitter.on('notify.user', (email, text) => {
-  Mailer.sendMail(email, text)
-    .then(data => logger.info(`Success send mail on ${email}`))
-    .catch(err => logger.error(`Error send mail on ${email}: ${err}`));
+emitter.on('notify.user', (emails, text) => {
+  if (!emails.length) {
+    return;
+  }
+  emails.forEach(email => {
+    Mailer.sendMail(email, text)
+      .then(() => logger.info(`Success send mail on ${email}`))
+      .catch(err => logger.error(`Error send mail on ${email}: ${err}`));
+  });
 });
 
 emitter.on('log.info', data => logger.info(data));

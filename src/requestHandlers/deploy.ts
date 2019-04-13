@@ -11,7 +11,7 @@ import db from "../Storage";
 const Git = require("nodegit");
 const ssh = new NodeSsh();
 
-const deploy = async function deploy({ body: { ref, repository: { clone_url } } }: Request, res: Response){
+const deploy = async function deploy({ body: { ref, after: currentCommit, repository: { clone_url } } }: Request, res: Response){
   const project = await db.findOne({ git: clone_url });
   if (!project) {
     emitter.emit('log.error', `Не зарегистрирован проект для репозитория ${clone_url}`);
@@ -52,12 +52,39 @@ const deploy = async function deploy({ body: { ref, repository: { clone_url } } 
     return;
   }
 
+  let isBuildSuccess = true;
   connectToServer(target.deploy.ssh)
-    .then(() => {
+    .then(async () => {
+      // Очищаем проект в нужной ветке
+      await ssh.execCommand(`git checkout ${target.branch} | git reset --hard`, { cwd: target.deploy.ssh.cwd });
+
+      // Тянем изменения
+      const pullResult = await ssh.execCommand(`git pull origin ${target.branch}`, { cwd: target.deploy.ssh.cwd });
+      if (pullResult.code !== 0) {
+        isBuildSuccess = false;
+        console.log('pullResult', pullResult);
+        emitter.emit('notify.user', project.notificationEmails, `Не удалось получить последнюю версию проекта: ${pullResult.stderr}`);
+        await ssh.execCommand(`git reset --hard ${project.lastSuccessCommit}`, { cwd: target.deploy.ssh.cwd });
+      }
+
+      // Выполняем тесты
+      const testResult = await ssh.execCommand(target.testCommand, { cwd: target.deploy.ssh.cwd });
+      if (testResult.code !== 0 && isBuildSuccess) {
+        console.log('testResult', testResult);
+        isBuildSuccess = false;
+        emitter.emit('notify.user', project.notificationEmails, `Тесты провалились: ${testResult.stderr}`);
+        await ssh.execCommand(`git reset --hard ${project.lastSuccessCommit}`, { cwd: target.deploy.ssh.cwd });
+      }
+
+      // Выполняем команду сборки
       ssh.execCommand(target.deploy.command, { cwd: target.deploy.ssh.cwd })
         .then(function(result) {
-          emitter.emit('notify.user', project.notificationEmails,
-            'STDOUT: ' + result.stdout + "\nSTDERR: " + result.stderr);
+          console.log('result', result);
+          if (isBuildSuccess) {
+            emitter.emit('notify.user', project.notificationEmails, 'STDOUT: ' + result.stdout + "\nSTDERR: " + result.stderr);
+            // Обновляем хэш последнего успешного коммита
+            db.update({ _id: project._id }, { $set: { lastSuccessCommit: currentCommit }});
+          }
           res.send();
         });
       }).catch(function (err) {

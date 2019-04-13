@@ -1,0 +1,8 @@
+{
+  "type": "object",
+  "properties": {
+    "project": { "type": "string" },
+    "updatedParams": { "type": "object" }
+  },
+  "required": [ "project", "updatedParams" ]
+}

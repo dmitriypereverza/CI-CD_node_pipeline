@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 
-import registerHandler from "../requestHandlers/register";
+import { registerProject, updateProject, getProject } from "../requestHandlers/register";
 import deployHandler from "../requestHandlers/deploy";
 
 interface RouteInterface {
@@ -12,10 +12,22 @@ interface RouteInterface {
 
 export default [
   {
-    path: '/register',
+    path: '/project',
+    type: 'GET',
+    handler: getProject,
+    validationSchema: require("../jsonSchemas/project.json")
+  },
+  {
+    path: '/project/register',
     type: 'POST',
-    handler: registerHandler,
+    handler: registerProject,
     validationSchema: require("../jsonSchemas/register.json")
+  },
+  {
+    path: '/project/update',
+    type: 'POST',
+    handler: updateProject,
+    validationSchema: require("../jsonSchemas/update.json")
   },
   {
     path: '/command',
