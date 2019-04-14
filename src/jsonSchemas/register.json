@@ -1,15 +1,29 @@
 {
   "type": "object",
   "properties": {
-    "project": { "type": "string" },
-    "git": { "type": "string" },
+    "project": {
+      "type": "string",
+      "minLength": "4",
+      "maxLength": "30"
+    },
+    "git": {
+      "type": "string",
+      "pattern": "^https://.+.git"
+    },
     "notificationEmails": {
       "type": "array",
-      "items": { "type": "string" }
+      "items": {
+        "type": "string",
+        "format": "email"
+      },
+      "uniqueItems": true,
+      "minItems": 1,
+      "maxItems": 5
     },
     "privateParam": {
       "type": "object"
     }
   },
+  "additionalProperties": false,
   "required": [ "project", "git" ]
 }

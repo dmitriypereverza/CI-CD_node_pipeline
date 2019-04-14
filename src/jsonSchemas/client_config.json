@@ -19,6 +19,7 @@
                   "username": {"type": "string"},
                   "cwd": {"type": "string"}
                 },
+                "additionalProperties": false,
                 "required": [
                   "host",
                   "username",
@@ -27,10 +28,12 @@
               },
               "command": {"type": "string"}
             },
+            "additionalProperties": false,
             "required": ["ssh", "command"]
           },
           "testCommand": {"type": "string"}
         },
+        "additionalProperties": false,
         "required": [
           "branch",
           "deploy"
@@ -38,6 +41,7 @@
       }
     }
   },
+  "additionalProperties": false,
   "required": [
     "name",
     "code",
