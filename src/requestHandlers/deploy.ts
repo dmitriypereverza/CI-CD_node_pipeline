@@ -11,29 +11,28 @@ import db from "../Storage";
 const Git = require("nodegit");
 const ssh = new NodeSsh();
 
-const deploy = async function deploy({ body: { ref, after: currentCommit, repository: { clone_url } } }: Request, res: Response){
+const deploy = async function deploy({ body: { ref, after: currentCommit, repository: { clone_url } } }: Request, res: Response) {
+  // Сразу возвращаем ответ на запрос от хуки git хостинга
+  res.send();
+
   const project = await db.findOne({ git: clone_url });
   if (!project) {
     emitter.emit('log.error', `Не зарегистрирован проект для репозитория ${clone_url}`);
-    res.send();
     return;
   }
 
-  let config = await getProjectConfig(project, res);
+  // Передаем в каррированную ф-цию email пользователей
+  const sendEmails = notifyUsers(project.notificationEmails);
+
+  let config = await getProjectConfig(project);
   if (!config) {
-    emitter.emit('notify.user', project.notificationEmails,
-      `Не удалось получить конфиг проекта ${project.project}. Проверте настройки проекта.`
-    );
-    res.send();
+    sendEmails(`Не удалось получить конфиг проекта ${project.project}. Проверте настройки проекта.`);
     return;
   }
 
   const validationResponse = validate(config, require("../jsonSchemas/client_config.json"));
   if (!validationResponse.isValid) {
-    emitter.emit('notify.user', project.notificationEmails,
-      `Получен невалидный конфиг файл проекта. Ошибки: ${JSON.stringify(validationResponse.errors)}`
-    );
-    res.send();
+    sendEmails(`Получен невалидный конфиг файл проекта. Ошибки: ${JSON.stringify(validationResponse.errors)}`);
     return;
   }
 
@@ -41,66 +40,55 @@ const deploy = async function deploy({ body: { ref, after: currentCommit, reposi
   try {
     builderConfig = buildProjectConfig(config, project.privateParam);
   } catch (e) {
-    emitter.emit('notify.user', project.notificationEmails, `Произошли ошибки при сборке файла конфигурации: ${e.message}`);
-    res.send();
+    sendEmails(`Произошли ошибки при сборке файла конфигурации: ${e.message}`);
     return;
   }
 
   const target = builderConfig.targets.find(target => `refs/heads/${target.branch}` === ref);
   if (!target) {
-    res.send();
     return;
   }
+
+  // Создаем ф-цию выполнения команд на сервере
+  const execSshCommand = execCommand(target.deploy.ssh.cwd);
 
   connectToServer(target.deploy.ssh)
     .then(async () => {
       // Очищаем проект в нужной ветке
-      await ssh.execCommand(`git checkout ${target.branch} | git reset --hard`, { cwd: target.deploy.ssh.cwd });
+      await execSshCommand(`git checkout ${target.branch} | git reset --hard`);
 
       // Тянем изменения
-      const pullResult = await ssh.execCommand(`git pull origin ${target.branch}`, { cwd: target.deploy.ssh.cwd });
+      const pullResult = await execSshCommand(`git pull origin ${target.branch}`);
       if (pullResult.code !== 0) {
-        console.log('pullResult', pullResult);
-        emitter.emit('notify.user', project.notificationEmails, `Не удалось получить последнюю версию проекта: ${pullResult.stderr}`);
-
-        await ssh.execCommand(`git reset --hard ${project.lastSuccessCommit}`, { cwd: target.deploy.ssh.cwd });
-        res.send();
+        sendEmails(`Не удалось получить последнюю версию проекта: ${pullResult.stderr}`);
+        await execSshCommand(`git reset --hard ${project.lastSuccessCommit}`);
         return;
       }
 
       // Выполняем тесты
-      const testResult = await ssh.execCommand(target.testCommand, { cwd: target.deploy.ssh.cwd });
+      const testResult = await execSshCommand(target.testCommand);
       if (testResult.code !== 0) {
-        console.log('testResult', testResult);
-        emitter.emit('notify.user', project.notificationEmails, `Тесты провалились: ${testResult.stderr}`);
-
-        await ssh.execCommand(`git reset --hard ${project.lastSuccessCommit}`, { cwd: target.deploy.ssh.cwd });
-        res.send();
+        sendEmails(`Тесты провалились: ${testResult.stderr}`);
+        await execSshCommand(`git reset --hard ${project.lastSuccessCommit}`);
         return;
       }
 
       // Выполняем команду сборки
-      const deployResult = await buildProject(target.deploy);
-      console.log('deployResult', deployResult);
+      const deployResult = await execSshCommand(target.deploy.command);
+      const output = deployResult.stdout + deployResult.stderr;
       if (deployResult.code === 0) {
-        emitter.emit('notify.user', project.notificationEmails,
-          `Проект успешно собран.\n ${deployResult.stdout}`
-        );
+        sendEmails(`Проект успешно собран.\n ${output}`);
         // Обновляем хэш последнего успешного коммита
         db.update({ _id: project._id }, { $set: { lastSuccessCommit: currentCommit }});
       } else {
-        emitter.emit('notify.user', project.notificationEmails,
-          `Произошли ошибки при сборке проекта.\n ${deployResult.stderr}`
-        );
-        await ssh.execCommand(`git reset --hard ${project.lastSuccessCommit}`, { cwd: target.deploy.ssh.cwd });
-        await buildProject(target.deploy);
+        sendEmails(`Произошли ошибки при сборке проекта.\n ${output}`);
+        await execSshCommand(`git reset --hard ${project.lastSuccessCommit}`);
+        await execSshCommand(target.deploy.command);
       }
-      res.send();
       return;
 
     }).catch(function (err) {
-      emitter.emit('notify.user', project.notificationEmails, `Проблема подключения к удаленному серверу: ${err}`);
-      res.send();
+      sendEmails(`Проблема подключения к удаленному серверу: ${err}`);
     });
 };
 
@@ -120,7 +108,7 @@ function connectToServer (sshConfig) {
   })
 }
 
-function getProjectConfig (project, res: Response) {
+function getProjectConfig (project) {
   return Git.Clone(project.git, "tmp")
     .then(repo => repo.getMasterCommit())
     .then(commit => commit.getEntry("project.conf.json"))
@@ -138,12 +126,14 @@ function getProjectConfig (project, res: Response) {
     .catch(function (err: Error) {
       emitter.emit(project.notificationEmails, `Произошли ошибка при скачивании репозитория: [${err.message}]`);
       rimraf.sync("tmp");
-      res.send();
     })
 }
 
-function buildProject (deployConfig) {
-  return ssh.execCommand(deployConfig.command, { cwd: deployConfig.ssh.cwd });
+function execCommand (cwd) {
+  return command => ssh.execCommand(command, { cwd });
 }
 
+function notifyUsers (notificationEmails) {
+  return msg => emitter.emit('notify.user', notificationEmails, msg);
+}
 export default deploy;

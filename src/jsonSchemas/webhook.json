@@ -2,6 +2,7 @@
   "type": "object",
   "properties": {
     "ref": { "type": "string" },
+    "after": { "type": "string" },
     "repository": {
       "type": "object",
       "properties": {
@@ -10,5 +11,5 @@
       "required": [ "clone_url" ]
     }
   },
-  "required": [ "ref" ]
+  "required": [ "ref", "after" ]
 }
