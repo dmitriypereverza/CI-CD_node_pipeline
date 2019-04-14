@@ -2,7 +2,30 @@
   "type": "object",
   "properties": {
     "project": { "type": "string" },
-    "updatedParams": { "type": "object" }
+    "updatedParams": {
+      "type": "object",
+      "properties": {
+        "git": {
+          "type": "string",
+          "pattern": "^https://.+.git"
+        },
+        "notificationEmails": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "email"
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "maxItems": 5
+        },
+        "privateParam": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    }
   },
+  "additionalProperties": false,
   "required": [ "project", "updatedParams" ]
 }

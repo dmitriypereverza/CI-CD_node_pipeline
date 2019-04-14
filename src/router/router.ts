@@ -6,7 +6,8 @@ import deployHandler from "../requestHandlers/deploy";
 interface RouteInterface {
   type: "POST" | "GET" | "PUT" | "DELETE";
   path: String,
-  handler: (req: Request, res: Response) => void,
+  async: Boolean,
+  handler: (req: Request, res: Response) => any,
   validationSchema: any
 }
 
@@ -40,6 +41,7 @@ export default [
   {
     path: '/webhook',
     type: 'POST',
+    async: true,
     handler: deployHandler,
     validationSchema: require("../jsonSchemas/webhook.json")
   },

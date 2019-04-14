@@ -16,12 +16,16 @@
                 "type": "object",
                 "properties": {
                   "host": {"type": "string"},
+                  "pass": {"type": "string"},
+                  "port": {"type": "number"},
                   "username": {"type": "string"},
                   "cwd": {"type": "string"}
                 },
                 "additionalProperties": false,
                 "required": [
+                  "pass",
                   "host",
+                  "port",
                   "username",
                   "cwd"
                 ]

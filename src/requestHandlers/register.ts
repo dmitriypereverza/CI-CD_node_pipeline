@@ -1,47 +1,40 @@
-import { Request, Response } from "express";
+import { Request } from "express";
 import db from "../Storage";
 
-export const registerProject = async ({ body }: Request, res: Response) => {
+export const registerProject = async ({ body }: Request) => {
   const document = await db.findOne({ project: body.project });
   if (document) {
-    res.send(`Проект с именем ${body.project} уже зарегистрирован.`);
-    return;
+    throw new Error(`Проект с именем ${body.project} уже зарегистрирован.`);
   }
 
-  db.insert(body)
-    .then(() => res.send(`Проект зарегистрирован.`))
-    .catch(err => {
-    if (err) {
-      res.send(`Ошибка при сохранении проекта "${body.project}": ${err}`);
-      return;
-    }
-  });
+  try {
+    const doc = await db.insert(body);
+    return `Проект зарегистрирован. \n${JSON.stringify(doc)}`;
+  } catch (err) {
+    throw new Error(`Ошибка при сохранении проекта "${body.project}": ${err}`);
+  }
 };
 
-export const updateProject = async ({ body }: Request, res: Response) => {
+export const updateProject = async ({ body }: Request) => {
   const document = await db.findOne({ project: body.project });
   if (!document) {
-    res.send(`Проект с именем "${body.project}" не зарегистрирован.`);
-    return;
+    throw new Error(`Проект с именем "${body.project}" не зарегистрирован.`);
   }
 
-  db.update({ _id: document._id }, { $inc: { ...body.updatedParams } })
-    .then(() => res.send(`Проект обновлен.`))
-    .catch(err => {
-      if (err) {
-        res.send(`Ошибка при обновлении конфигурации проекта "${document.project}": ${err}`);
-        return;
-      }
-    });
+  try {
+    const doc = await db.update({ _id: document._id }, { $set: { ...body.updatedParams } }, { returnUpdatedDocs: true });
+    return `Проект обновлен. \n${JSON.stringify(doc)}`;
+  } catch (err) {
+    throw new Error(`Ошибка при обновлении конфигурации проекта "${document.project}": ${err}`);
+  }
 };
 
-export const getProject = async ({ body }: Request, res: Response) => {
+export const getProject = async ({ body }: Request) => {
   const document = await db.find({ project: body.project });
   if (!document) {
-    res.send(`Проект с именем "${body.project}" не зарегистрирован.`);
-    return;
+    throw new Error(`Проект с именем "${body.project}" не зарегистрирован.`);
   }
 
-  res.send(JSON.stringify(document));
+  return document;
 };
 

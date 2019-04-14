@@ -11,10 +11,7 @@ import db from "../Storage";
 const Git = require("nodegit");
 const ssh = new NodeSsh();
 
-const deploy = async function deploy({ body: { ref, after: currentCommit, repository: { clone_url } } }: Request, res: Response) {
-  // Сразу возвращаем ответ на запрос от хуки git хостинга
-  res.send();
-
+const deploy = async function deploy({ body: { ref, after: currentCommit, repository: { clone_url } } }: Request) {
   const project = await db.findOne({ git: clone_url });
   if (!project) {
     emitter.emit('log.error', `Не зарегистрирован проект для репозитория ${clone_url}`);
@@ -54,6 +51,10 @@ const deploy = async function deploy({ body: { ref, after: currentCommit, reposi
 
   connectToServer(target.deploy.ssh)
     .then(async () => {
+      if (!project.lastSuccessCommit) {
+        db.update({ _id: project._id }, { $set: { lastSuccessCommit: currentCommit }});
+      }
+
       // Очищаем проект в нужной ветке
       await execSshCommand(`git checkout ${target.branch} | git reset --hard`);
 
