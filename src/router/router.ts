@@ -31,14 +31,6 @@ export default [
     validationSchema: require("../jsonSchemas/update.json")
   },
   {
-    path: '/command',
-    type: 'POST',
-    handler: function () {
-
-    },
-    validationSchema: require("../jsonSchemas/command.json")
-  },
-  {
     path: '/webhook',
     type: 'POST',
     async: true,
