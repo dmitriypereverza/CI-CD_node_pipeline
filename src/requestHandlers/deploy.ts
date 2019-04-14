@@ -66,11 +66,13 @@ const deploy = async function deploy({ body: { ref, after: currentCommit, reposi
       }
 
       // Выполняем тесты
-      const testResult = await execSshCommand(target.testCommand);
-      if (testResult.code !== 0) {
-        sendEmails(`Тесты провалились: ${testResult.stderr}`);
-        await execSshCommand(`git reset --hard ${project.lastSuccessCommit}`);
-        return;
+      if (target.testCommand) {
+        const testResult = await execSshCommand(target.testCommand);
+        if (testResult.code !== 0) {
+          sendEmails(`Тесты провалились: ${testResult.stderr}`);
+          await execSshCommand(`git reset --hard ${project.lastSuccessCommit}`);
+          return;
+        }
       }
 
       // Выполняем команду сборки

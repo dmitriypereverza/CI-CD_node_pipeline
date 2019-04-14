@@ -29,20 +29,11 @@
             },
             "required": ["ssh", "command"]
           },
-          "testCommand": {"type": "string"},
-          "notification": {
-            "type": "object",
-            "properties": {
-              "email": {"type": "string"}
-            },
-            "required": ["email"]
-          }
+          "testCommand": {"type": "string"}
         },
         "required": [
           "branch",
-          "deploy",
-          "testCommand",
-          "notification"
+          "deploy"
         ]
       }
     }
